@@ -6,27 +6,59 @@ from pybricks.parameters import Port, Stop, Direction, Button, Color
 from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
-from pybricks.iodevices import Ev3devSensor
 
-
-# This program requires LEGO EV3 MicroPython v2.0 or higher.
-# Click "Open user guide" on the EV3 extension tab for more information.
-
-
-# Create your objects here.
+#Sensors and Motors
 ev3 = EV3Brick()
-infrared_1 = InfraredSensor(Port.S1)
-pohon = Motor(Port.C)
-zataceni = Motor(Port.B)
-kompas = Ev3devSensor(Port.S2)
+drive = Motor(Port.C)
+steering = Motor(Port.B)
+infra = InfraredSensor(Port.S1)
+compass = Ev3devSensor(Port.S2)
+
+#Vars
+running = False
+canSteerL = True
+canSteerR = True
+maxAngle = 30
+minAngel = -30
+
 
 while True:
-    tlac = infrared_1.buttons(1)
-    if len(tlac) != 0:
-        print(tlac)
-    for i in tlac:
-        print(i)
-        if str(i) == "Button.LEFT_UP":
-            zataceni.run_angle(10,20,Stop.BRAKE,False)
-    
-    
+    buttons = infra.keyboard()
+    if len(buttons)>1:
+        if isinstance(buttons[0], Button.Left_UP) and isinstance(buttons[1], Button.Right_UP):
+            if running:
+                drive.stop()
+                running = False
+            else:
+                drive.run(50)
+                running = True
+        if isinstance(buttons[0], Button.Left_DOWN) and isinstance(buttons[1], Button.Right_DOWN):
+            if running:
+                drive.stop()
+                running = False
+            else:
+                drive.run(-50)
+                running = True 
+    else:
+        if isinstance(buttons[0], Button.Left_UP):
+            if canSteerL:
+                steering.run_angle(5,5) 
+        if isinstance(buttons[0], Button.Right_UP):
+            if canSteerR:
+                steering.run_angle(5,5)
+        if isinstance(buttons[0], Button.Left_DOWN):
+        
+        if isinstance(buttons[0], Button.Right_DOWN):
+
+def steerCheck():
+    steer = steering.angle()
+    if steer >= 30:
+        canSteerL = False
+        steering.brake()
+    else:
+        canSteerL = True
+    if steer <= -30:
+        canSteerR = False
+        steering.brake()
+    else:
+        canSteerR = True
