@@ -7,7 +7,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 
-import threading as thr
+import threading
 
 #Sensors and Motors
 ev3 = EV3Brick()
@@ -57,8 +57,8 @@ def EStop():
         drive.brake()
 
 #Thread execution
-steerCheck = thr.Thread(target = steerCheck, daemon = True)
-EStop = thr.Thread(target = EStop, daemon = True)
+steerCheck = threading.Thread(target = steerCheck, daemon = True)
+EStop = threading.Thread(target = EStop, daemon = True)
 
 steerCheck.start()
 EStop.start()
