@@ -7,6 +7,8 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 
+import threading as thr
+
 #Sensors and Motors
 ev3 = EV3Brick()
 drive = Motor(Port.C)
@@ -24,34 +26,7 @@ maxAngle = 30
 minAngel = -30
 
 
-while True:
-    buttons = infra.keyboard()
-    if len(buttons)>1:
-        if isinstance(buttons[0], Button.Left_UP) and isinstance(buttons[1], Button.Right_UP):
-            if (not running) and canForward:
-                drive.run(50)
-                running = True
-            else:
-                drive.stop()
-                running = False
-        if isinstance(buttons[0], Button.Left_DOWN) and isinstance(buttons[1], Button.Right_DOWN):
-            if running:
-                drive.stop()
-                running = False
-            else:
-                drive.run(-50)
-                running = True 
-    else:
-        if isinstance(buttons[0], Button.Left_UP):
-            if canSteerL:
-                steering.run_angle(5,5) 
-        if isinstance(buttons[0], Button.Right_UP):
-            if canSteerR:
-                steering.run_angle(5,5)
-        if isinstance(buttons[0], Button.Left_DOWN):
-        
-        if isinstance(buttons[0], Button.Right_DOWN):
-
+#Main functions
 def steerCheck():
     steer = steering.angle()
     if steer >= 30:
@@ -80,3 +55,39 @@ def EStop():
         ev3.light.on(Color.RED)
         canDrive = False
         drive.brake()
+
+#Thread execution
+steerCheck = thr.Thread(target = steerCheck, daemon = True)
+EStop = thr.Thread(target = EStop, daemon = True)
+
+steerCheck.start()
+EStop.start()
+#Main Loop
+while True:
+    buttons = infra.keyboard()
+    if len(buttons)>1:
+        if isinstance(buttons[0], Button.Left_UP) and isinstance(buttons[1], Button.Right_UP):
+            if (not running) and canForward:
+                drive.run(50)
+                running = True
+            else:
+                drive.stop()
+                running = False
+        if isinstance(buttons[0], Button.Left_DOWN) and isinstance(buttons[1], Button.Right_DOWN):
+            if running:
+                drive.stop()
+                running = False
+            else:
+                drive.run(-50)
+                running = True 
+    else:
+        if isinstance(buttons[0], Button.Left_UP):
+            if canSteerL:
+                steering.run_angle(5,5) 
+        if isinstance(buttons[0], Button.Right_UP):
+            if canSteerR:
+                steering.run_angle(5,5)
+        if isinstance(buttons[0], Button.Left_DOWN):
+            ev3.beep()
+        if isinstance(buttons[0], Button.Right_DOWN):
+
