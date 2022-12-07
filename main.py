@@ -90,4 +90,5 @@ while True:
         if isinstance(buttons[0], Button.Left_DOWN):
             ev3.beep()
         if isinstance(buttons[0], Button.Right_DOWN):
+            pass
 
