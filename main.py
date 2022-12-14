@@ -91,10 +91,10 @@ while True:
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP:
             if canSteerL:
-                steering.run_angle(steerAngle,steerSpeed) 
+                steering.run_angle(-(steerSpeed),steerAngle) 
         if buttons[0] == Button.RIGHT_UP:
             if canSteerR:
-                steering.run_angle(steerAngle,-(steerSpeed))
+                steering.run_angle(steerSpeed,steerAngle)
         if buttons[0] == Button.LEFT_DOWN:
             ev3.beep()
         if buttons[0] == Button.RIGHT_DOWN:
