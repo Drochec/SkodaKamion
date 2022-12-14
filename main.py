@@ -24,74 +24,79 @@ running = False
 canSteerL = True
 canSteerR = True
 canForward = True
+driveSpeed = 50
+steerSpeed = 100
+steerAngle = 10
 maxAngle = 30
 minAngel = -30
 
 #Main functions
 def steerCheck():
-    steer = steering.angle()
-    if steer >= 30:
-        canSteerL = False
-        steering.brake()
-    else:
-        canSteerL = True
-    if steer <= -30:
-        canSteerR = False
-        steering.brake()
-    else:
-        canSteerR = True
+    while True:
+        steer = steering.angle()
+        if steer >= 30:
+            canSteerL = False
+            steering.brake()
+        else:
+            canSteerL = True
+        if steer <= -30:
+            canSteerR = False
+            steering.brake()
+        else:
+            canSteerR = True
 
 def EStop():
+    while True:
     #distance = ultra.distance()
-    distance = 200
-    if distance < 30:
-        ev3.speaker.beep()
-        ev3.light.on(Color.GREEN)
-        canDrive = True
-    elif distance < 20:
-        ev3.speaker.beep(600)
-        ev3.light.on(Color.ORANGE)
-        canDrive = True
-    elif distance < 10:
-        ev3.speaker.beep(750)
-        ev3.light.on(Color.RED)
-        canDrive = False
-        drive.brake()
+        distance = 200
+        if distance < 30:
+            ev3.speaker.beep()
+            ev3.light.on(Color.GREEN)
+            canDrive = True
+        elif distance < 20:
+            ev3.speaker.beep(600)
+            ev3.light.on(Color.ORANGE)
+            canDrive = True
+        elif distance < 10:
+            ev3.speaker.beep(750)
+            ev3.light.on(Color.RED)
+            canDrive = False
+            drive.brake()
 
 #Thread execution
 steerCheck = threading.Thread(target = steerCheck)
 EStop = threading.Thread(target = EStop)
 
-steerCheck.start()
-EStop.start()
+#steerCheck.start()
+#EStop.start()
 #Main Loop
 while True:
     buttons = infra.keypad()
     print(buttons)
     if len(buttons)>1:
-        if isinstance(buttons[0], Button.LEFT_UP) and isinstance(buttons[1], Button.RIGHT_UP):
+        if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_UP:
             if (not running) and canForward:
-                drive.run(50)
+                drive.run(driveSpeed)
                 running = True
             else:
                 drive.stop()
                 running = False
-        if isinstance(buttons[0], Button.LEFT_DOWN) and isinstance(buttons[1], Button.RIGHT_DOWN):
+        if buttons[0] == Button.LEFT_DOWN and buttons[1] == Button.RIGHT_DOWN:
             if running:
                 drive.stop()
                 running = False
             else:
-                drive.run(-50)
+                drive.run(-(driveSpeed))
                 running = True 
     elif len(buttons)==1:
-        if isinstance(buttons[0], Button.LEFT_UP):
+        if buttons[0] == Button.LEFT_UP:
             if canSteerL:
-                steering.run_angle(5,5) 
-        if isinstance(buttons[0], Button.RIGHT_UP):
+                steering.run_angle(steerAngle,steerSpeed) 
+        if buttons[0] == Button.RIGHT_UP:
             if canSteerR:
-                steering.run_angle(5,5)
-        if isinstance(buttons[0], Button.LEFT_DOWN):
+                steering.run_angle(steerAngle,-(steerSpeed))
+        if buttons[0] == Button.LEFT_DOWN:
             ev3.beep()
-        if isinstance(buttons[0], Button.RIGHT_DOWN):
+        if buttons[0] == Button.RIGHT_DOWN:
             pass
 
