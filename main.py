@@ -72,7 +72,10 @@ def EStop():
         canForward = True
     else:
         canForward = True
-    print(distance,canForward)
+    #print(distance,canForward)
+    
+def readCompass():
+    return compass.read("COMPASS")
 
 while True:
     buttons = infra.keypad()
@@ -106,4 +109,4 @@ while True:
             pass
     steerCheck()
     EStop()
-    
+    print(readCompass())
