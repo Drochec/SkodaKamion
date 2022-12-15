@@ -25,8 +25,8 @@ canSteerL = True
 canSteerR = True
 canForward = True
 driveSpeed = 1560
-steerSpeed = 100
-steerAngle = 40
+steerSpeed = 1560
+steerAngle = 5
 maxAngle = 70
 
 #Main functions
@@ -90,10 +90,10 @@ while True:
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP:
             if canSteerL:
-                steering.run_angle(speed = -(steerSpeed),rotation_angle = steerAngle) 
+                steering.run_angle(speed = -(steerSpeed),rotation_angle = steerAngle, wait=False) 
         if buttons[0] == Button.RIGHT_UP:
             if canSteerR:
-                steering.run_angle(speed = steerSpeed, rotation_angle = steerAngle)
+                steering.run_angle(speed = steerSpeed, rotation_angle = steerAngle, wait=False)
         if buttons[0] == Button.LEFT_DOWN:
             #ev3.beep()
             pass
