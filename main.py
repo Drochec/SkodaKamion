@@ -15,7 +15,7 @@ drive = Motor(Port.C)
 steering = Motor(Port.B)
 infra = InfraredSensor(Port.S1)
 compass = Ev3devSensor(Port.S2)
-#ultra = UltrasonicSensor(Port.S3)
+ultra = UltrasonicSensor(Port.S3)
 
 #Vars
 running = False
@@ -52,24 +52,27 @@ def steerCheck():
     else:
         canSteerL = True
         stoppedL = False
-    print(steer,canSteerR,canSteerL)
+    #print(steer,canSteerR,canSteerL)
 
 def EStop():
-    #distance = ultra.distance()
-    distance = 200
-    if distance < 30:
-        ev3.speaker.beep()
-        ev3.light.on(Color.GREEN)
-        canDrive = True
-    elif distance < 20:
-        ev3.speaker.beep(600)
-        ev3.light.on(Color.ORANGE)
-        canDrive = True
-    elif distance < 10:
+    global canForward
+    distance = ultra.distance()
+    if distance < 180:
         ev3.speaker.beep(750)
         ev3.light.on(Color.RED)
-        canDrive = False
+        canForward = False
         drive.brake()
+    elif distance < 300:
+        ev3.speaker.beep(600)
+        ev3.light.on(Color.ORANGE)
+        canForward = True
+    elif distance < 400:
+        ev3.speaker.beep()
+        ev3.light.on(Color.GREEN)
+        canForward = True
+    else:
+        canForward = True
+    print(distance,canForward)
 
 while True:
     buttons = infra.keypad()
@@ -97,7 +100,7 @@ while True:
             if canSteerR:
                 steering.run_angle(speed = steerSpeed, rotation_angle = steerAngle, wait=False)
         if buttons[0] == Button.LEFT_DOWN:
-            #ev3.beep()
+            ev3.speaker.beep()
             pass
         if buttons[0] == Button.RIGHT_DOWN:
             pass
