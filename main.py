@@ -9,8 +9,6 @@ from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from pybricks.iodevices import Ev3devSensor
 
-import threading
-
 #Sensors and Motors
 ev3 = EV3Brick()
 drive = Motor(Port.C)
@@ -23,6 +21,8 @@ compass = Ev3devSensor(Port.S2)
 running = False
 canSteerL = True
 canSteerR = True
+stoppedL = False
+stoppedR = False
 canForward = True
 driveSpeed = 1560
 steerSpeed = 1560
@@ -31,44 +31,46 @@ maxAngle = 70
 
 #Main functions
 def steerCheck():
-    while True:
-        steer = steering.angle()
-        if steer >= maxAngle:
-            canSteerR = False
+    global stoppedL
+    global stoppedR
+    global canSteerR
+    global canSteerL
+    steer = steering.angle()
+    if steer >= maxAngle: #Kladne
+        canSteerR = False
+        if (not stoppedR):
             steering.brake()
-        else:
-            canSteerR = True
-        if steer <= -(maxAngle):
-            canSteerL = False
+            stoppedR = True
+    else:
+        canSteerR = True
+        stoppedR = False
+    if steer <= (-(maxAngle)): #Zaporne
+        canSteerL = False
+        if (not stoppedL):
             steering.brake()
-        else:
-            canSteerL = True
+            stoppedL = True
+    else:
+        canSteerL = True
+        stoppedL = False
+    print(steer,canSteerR,canSteerL)
 
 def EStop():
-    while True:
     #distance = ultra.distance()
-        distance = 200
-        if distance < 30:
-            ev3.speaker.beep()
-            ev3.light.on(Color.GREEN)
-            canDrive = True
-        elif distance < 20:
-            ev3.speaker.beep(600)
-            ev3.light.on(Color.ORANGE)
-            canDrive = True
-        elif distance < 10:
-            ev3.speaker.beep(750)
-            ev3.light.on(Color.RED)
-            canDrive = False
-            drive.brake()
+    distance = 200
+    if distance < 30:
+        ev3.speaker.beep()
+        ev3.light.on(Color.GREEN)
+        canDrive = True
+    elif distance < 20:
+        ev3.speaker.beep(600)
+        ev3.light.on(Color.ORANGE)
+        canDrive = True
+    elif distance < 10:
+        ev3.speaker.beep(750)
+        ev3.light.on(Color.RED)
+        canDrive = False
+        drive.brake()
 
-#Thread execution
-steerCheck = threading.Thread(target = steerCheck)
-EStop = threading.Thread(target = EStop)
-
-steerCheck.start()
-#EStop.start()
-#Main Loop
 while True:
     buttons = infra.keypad()
     print(buttons)
@@ -99,5 +101,6 @@ while True:
             pass
         if buttons[0] == Button.RIGHT_DOWN:
             pass
-    print(canSteerR,canSteerR)
-
+    steerCheck()
+    EStop()
+    
