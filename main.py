@@ -23,6 +23,7 @@ canSteerL = True
 canSteerR = True
 stoppedL = False
 stoppedR = False
+stoppedF = False
 canForward = True
 driveSpeed = 1560
 steerSpeed = 1560
@@ -56,22 +57,29 @@ def steerCheck():
 
 def EStop():
     global canForward
+    global stoppedF
     distance = ultra.distance()
     if distance < 180:
         ev3.speaker.beep(750)
         ev3.light.on(Color.RED)
         canForward = False
-        drive.brake()
+        if not stoppedF:
+            drive.brake()
+            stoppedF = True
     elif distance < 300:
         ev3.speaker.beep(600)
         ev3.light.on(Color.ORANGE)
         canForward = True
+        stoppedF = False
     elif distance < 400:
         ev3.speaker.beep()
         ev3.light.on(Color.GREEN)
         canForward = True
+        stoppedF = False
     else:
+        ev3.light.on(Color.GREEN)
         canForward = True
+        stoppedF = False
     #print(distance,canForward)
     
 def readCompass():
