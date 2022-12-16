@@ -14,7 +14,7 @@ ev3 = EV3Brick()
 drive = Motor(Port.C)
 steering = Motor(Port.B)
 infra = InfraredSensor(Port.S1)
-compass = Ev3devSensor(Port.S2)
+#compass = Ev3devSensor(Port.S2)
 ultra = UltrasonicSensor(Port.S3)
 
 #Vars
@@ -109,4 +109,4 @@ while True:
             pass
     steerCheck()
     EStop()
-    print(readCompass())
+    #print(readCompass())
