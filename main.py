@@ -108,20 +108,13 @@ while True:
     if len(buttons)>1:
         #Jizda vpred 
         if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_UP:
-            if (not running) and canForward: #Pokud kamion uz jede, zastavi ho
+            if canForward:
                 drive.run(speed = driveSpeed)
                 running = True
-            else:
-                drive.stop()
-                running = False
         #Jizda vzad
         if buttons[0] == Button.LEFT_DOWN and buttons[1] == Button.RIGHT_DOWN:
-            if running:
-                drive.stop()
-                running = False
-            else:
-                drive.run(speed = -(driveSpeed))
-                running = True 
+            drive.run(speed = -(driveSpeed))
+            running = True 
     #Samostatna tlacitka
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP: #Zataceni doleva
@@ -130,9 +123,12 @@ while True:
         if buttons[0] == Button.RIGHT_UP: #Zataceni doprava
             if canSteerRight:
                 steering.run_angle(speed = steerSpeed, rotation_angle = steerAngle, wait=False)
-        if buttons[0] == Button.LEFT_DOWN:
-            ev3.speaker.beep()
-            pass
+        
+        if buttons[0] == Button.LEFT_DOWN: #Brzda
+            drive.brake()
+            running = False
+        
+        #Zatim nevyuzite
         if buttons[0] == Button.RIGHT_DOWN:
             pass
     steerCheck()
