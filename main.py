@@ -18,84 +18,103 @@ infra = InfraredSensor(Port.S1)
 ultra = UltrasonicSensor(Port.S3)
 
 #Vars
-running = False
-canSteerL = True
-canSteerR = True
-stoppedL = False
-stoppedR = False
-stoppedF = False
-canForward = True
-driveSpeed = 1560
+running = False #Je kamion v pohybu
+canSteerLeft = True #Muze zatacet doleva
+canSteerRight = True #Muze zatacet doprava 
+stoppedLeft = False #Zataceni doleva bylo uz zastaveno
+stoppedRight = False #Zataceni doprava bylo uz zastaveno
+stoppedForward = False #Jizda vpred byla zastavena
+canForward = True #Muze jet vpred
+driveSpeed = 1560 #Rychlost motoru, v deg/s 
 steerSpeed = 1560
-steerAngle = 5
-maxAngle = 70
+steerAngle = 5 #O kolik stupnu se ma motor otocit pri jednom stisknuti tlacitka
+maxAngle = 70 #Maximalni uhel na ktery se muze otocit motor ktery ovlada zataceni
 
 #Main functions
-def steerCheck():
-    global stoppedL
-    global stoppedR
-    global canSteerR
-    global canSteerL
-    steer = steering.angle()
-    if steer >= maxAngle: #Kladne
-        canSteerR = False
-        if (not stoppedR):
+
+#Funkce na kontrolu zataceni, kontroluje uhel zataceciho motoru, pokud prekroci maxAngle, zabrani zataceni
+def steerCheck():  
+    global stoppedLeft
+    global stoppedRight
+    global canSteerRight
+    global canSteerLeft
+    steer = steering.angle() #Uhel na motoru
+    #Kontrola pro kladny uhel = natoceni kol doprava
+    if steer >= maxAngle
+        canSteerRight = False #Nemuze zatacet
+        if (not stoppedRight): #Zastavi kola pouze jednou
             steering.brake()
-            stoppedR = True
+            stoppedRight = True
     else:
-        canSteerR = True
-        stoppedR = False
-    if steer <= (-(maxAngle)): #Zaporne
-        canSteerL = False
-        if (not stoppedL):
+        canSteerRight = True
+        stoppedRight = False
+    #To same pro zaporne hodnoty = natoceni kol doleva 
+    if steer <= (-(maxAngle)):
+        canSteerLeft = False
+        if (not stoppedLeft):
             steering.brake()
-            stoppedL = True
+            stoppedLeft = True
     else:
-        canSteerL = True
-        stoppedL = False
+        canSteerLeft = True
+        stoppedLeft = False
     #print(steer,canSteerR,canSteerL)
 
+
+#Nouzove brzdeni pokud je prekazka pred kamionem
+#Kontroluje vzdalenost v cm pred kamionem, pokud je mensi jak urcita hodnota provede akci
 def EStop():
     global canForward
-    global stoppedF
-    distance = ultra.distance()
+    global stoppedForward
+    distance = ultra.distance() #Zmerena vzdalenost
+    
+    #Prekazka pred kamionem 
     if distance < 180:
-        ev3.speaker.beep(750)
-        ev3.light.on(Color.RED)
-        canForward = False
-        if not stoppedF:
+        ev3.speaker.beep(750) #Vydava vysoky ton
+        ev3.light.on(Color.RED) #Zacne sviti cervenou barvou
+        canForward = False #Zamezi jizde v pred
+        if not stoppedForward: #Zastavi kamion, pouze jednou
             drive.brake()
-            stoppedF = True
+            stoppedForward = True
+    
+    
+    #Prekazka nebezpecne blizko
     elif distance < 300:
-        ev3.speaker.beep(600)
-        ev3.light.on(Color.ORANGE)
+        ev3.speaker.beep(600) #Vydava ton 
+        ev3.light.on(Color.ORANGE) #Sviti oranzovou barvou
+        canForward = True 
+        stoppedForward = False
+    
+    #Prekazka v dalce
+    elif distance < 400: 
+        ev3.speaker.beep(600) #Vydava ton
+        ev3.light.on(Color.GREEN) #Sviti zelene, vychozi barva
         canForward = True
-        stoppedF = False
-    elif distance < 400:
-        ev3.speaker.beep()
-        ev3.light.on(Color.GREEN)
-        canForward = True
-        stoppedF = False
+        stoppedForward = False
+    
+    #Zadna prekazka, nastavi vychozi hodnoty
     else:
         ev3.light.on(Color.GREEN)
         canForward = True
-        stoppedF = False
+        stoppedForward = False
     #print(distance,canForward)
-    
-def readCompass():
-    return compass.read("COMPASS")
 
+
+#Hlavni cyklus
 while True:
-    buttons = infra.keypad()
-    print(buttons)
+    buttons = infra.keypad() #Ziska stiknuta tlacitka
+    #print(buttons) 
+    
+    #Kombinace tlacitek
     if len(buttons)>1:
+        #Jizda vpred 
         if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_UP:
-            if (not running) and canForward:
+            if (not running) and canForward: #Pokud kamion uz jede, zastavi ho
                 drive.run(speed = driveSpeed)
                 running = True
             else:
                 drive.stop()
                 running = False
+        #Jizda vzad
         if buttons[0] == Button.LEFT_DOWN and buttons[1] == Button.RIGHT_DOWN:
             if running:
                 drive.stop()
@@ -103,12 +122,13 @@ while True:
             else:
                 drive.run(speed = -(driveSpeed))
                 running = True 
+    #Samostatna tlacitka
     elif len(buttons)==1:
-        if buttons[0] == Button.LEFT_UP:
-            if canSteerL:
-                steering.run_angle(speed = -(steerSpeed),rotation_angle = steerAngle, wait=False) 
-        if buttons[0] == Button.RIGHT_UP:
-            if canSteerR:
+        if buttons[0] == Button.LEFT_UP: #Zataceni doleva
+            if canSteerLeft:
+                steering.run_angle(speed = -(steerSpeed),rotation_angle = steerAngle, wait=False)
+        if buttons[0] == Button.RIGHT_UP: #Zataceni doprava
+            if canSteerRight:
                 steering.run_angle(speed = steerSpeed, rotation_angle = steerAngle, wait=False)
         if buttons[0] == Button.LEFT_DOWN:
             ev3.speaker.beep()
