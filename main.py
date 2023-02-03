@@ -9,6 +9,12 @@ from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 #from pybricks.iodevices import Ev3devSensor
 
+#TODO
+#Vypínání ovladačem
+#Sledování čářy
+#Sledování čáry PID
+
+
 #Nastavení senzorů a motorů
 ev3 = EV3Brick()
 drive = Motor(Port.C)
