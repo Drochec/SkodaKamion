@@ -141,8 +141,14 @@ while True:
     buttons = infra.keypad() #Získá stisknutá tlačítka
     #print(buttons) 
     
+    #Vypnutí programu
+    if len(buttons)==4:
+        steering.run_to_angle(0,wait=True)
+        exit()
+    
+    
     #Kombinace tlačítek
-    if len(buttons)>1:
+    elif len(buttons)>1:
         #Jízda vpřed
         if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_UP:
             if canForward:
