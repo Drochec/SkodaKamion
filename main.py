@@ -10,8 +10,8 @@ from pybricks.media.ev3dev import SoundFile, ImageFile
 #from pybricks.iodevices import Ev3devSensor
 
 #TODO
-#Vypínání ovladačem
-#Sledování čářy
+#Vypínání ovladačem - h
+#Sledování čářy - h
 #Sledování čáry PID
 
 
@@ -22,21 +22,28 @@ steering = Motor(Port.B)
 infra = InfraredSensor(Port.S1)
 #compass = Ev3devSensor(Port.S2)
 ultra = UltrasonicSensor(Port.S3)
+light = ColorSensor(Port.S2)
 
 #Proměnné
 running = False #Je kamion v pohybu
 canSteerLeft = True #Může zatáčet doleva
-canSteerRight = True #Může zatáčet doprava 
+canSteerRight = True #Může zatáčet doprava
+canForward = True #Může jet vpřed
+
 stoppedLeft = False #Zatáčení doleva bylo už zastaveno
 stoppedRight = False #Zatáčení doprava bylo už zastaveno
 stoppedForward = False #Jízda vpřed byla zastavena
-canForward = True #Může jet vpřed
+
 driveSpeed = 1560 #Rychlost motoru, v stupních za sekundu (1560 ma)
 steerSpeed = 1560
+lineSpeed = SpeedPercent(30) #Rychlost při sledování čáry
 steerAngle = 5 #O kolik stupňů se má motor otočit při jednom stisknutí tlačítka
 maxAngle = 70 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
 degreesToAvoid = 720 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
 
+black = 15 #Naměřená hodnota černé
+white = 80 #Naměřená hodnota bílé
+boundary = (black + white) / 2 #Rozmezí bílé a černé
 
 #Hlavní funkce
 
@@ -49,7 +56,7 @@ def steerCheck():
     steer = steering.angle() #Úhel na motoru
     
     #Kontrola pro kladný úhel = natočení kol doprava
-    if steer >= maxAngle
+    if steer >= maxAngle:
         canSteerRight = False #Nemůže zatáčet
         if (not stoppedRight): #Zastaví kola pouze jednou
             steering.brake()
@@ -111,6 +118,7 @@ def EStop():
 #Semiautonomní režim
 def semiauto():
     turning = False
+    drive.run(driveSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
         if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
@@ -126,7 +134,19 @@ def semiauto():
             steering.run_angle(0)
             turning = False
             
-
+#Sledování čáry
+def linefollower():
+    drive.run(lineSpeed)
+    while True:
+        buttons = infra.keypad() #Získá stiknutá tlačítka
+        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+            break
+        
+        if light.reflection() > boundary:
+            steering.run_angle(15,wait=False)
+        else:
+            steering.run_angle(-15,wait=False)
+        
 
 #-------------
 #Hlavní cyklus
