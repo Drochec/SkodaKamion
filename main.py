@@ -143,6 +143,8 @@ while True:
     
     #Vypnutí programu
     if len(buttons)==4:
+        drive.brake()
+        steering.brake()
         steering.run_to_angle(0,wait=True)
         exit()
     
