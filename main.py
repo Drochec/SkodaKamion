@@ -19,9 +19,9 @@ from pybricks.media.ev3dev import SoundFile, ImageFile
 ev3 = EV3Brick()
 drive = Motor(Port.C)
 steering = Motor(Port.B)
-infra = InfraredSensor(Port.S1)
+infra = InfraredSensor(Port.S3)
 #compass = Ev3devSensor(Port.S2)
-ultra = UltrasonicSensor(Port.S3)
+ultra = UltrasonicSensor(Port.S1)
 light = ColorSensor(Port.S2)
 
 #Proměnné
@@ -36,7 +36,7 @@ stoppedForward = False #Jízda vpřed byla zastavena
 
 driveSpeed = 1560 #Rychlost motoru, v stupních za sekundu (1560 ma)
 steerSpeed = 1560
-lineSpeed = SpeedPercent(30) #Rychlost při sledování čáry
+lineSpeed = 260 #Rychlost při sledování čáry
 steerAngle = 5 #O kolik stupňů se má motor otočit při jednom stisknutí tlačítka
 maxAngle = 70 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
 degreesToAvoid = 720 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
@@ -78,14 +78,14 @@ def steerCheck():
 
 
 #Nouzove brždění pokud je překážka před kamionem
-#Kontroluje vzdálenost v cm před kamionem, pokud je menší jak určitá hodnota provede akci
+#Kontroluje vzdálenost v mm před kamionem, pokud je menší jak určitá hodnota provede akci
 def EStop():
     global canForward
     global stoppedForward
     distance = ultra.distance() #Změřená vzdálenost
     
     #Překážka před kamionem 
-    if distance < 180:
+    if distance < 200:
         ev3.speaker.beep(750) #Vydává vysoký tón
         ev3.light.on(Color.RED) #Začne svítit červenou barvou
         canForward = False #Zamezí jízdě vpřed
@@ -102,11 +102,11 @@ def EStop():
         stoppedForward = False
     
     #Prekazka v dalce
-    elif distance < 400: 
-        ev3.speaker.beep(600) #Vydává tón
-        ev3.light.on(Color.GREEN) #Svítí zeleně, výchozi barva
-        canForward = True
-        stoppedForward = False
+    #elif distance < 400: 
+    #    ev3.speaker.beep(600) #Vydává tón
+    #    ev3.light.on(Color.GREEN) #Svítí zeleně, výchozi barva
+    #    canForward = True
+    #    stoppedForward = False
     
     #Žádná překážka, nastaví výchozí hodnoty
     else:
@@ -127,15 +127,19 @@ def semiauto():
         distance = ultra.distance() #Získá vzdálenost před kamionem
         drive.run(speed = driveSpeed) 
         if distance <= 180: #Jestli je před kamionem překážka zatočí
-            drive.reset_angle()
-            steering.run_angle(-70)
-            turning = True
-        elif turning and (drive.angle() >= degreesToAvoid):
-            steering.run_angle(0)
-            turning = False
+            drive.brake()
+            drive.reset_angle(0)
+            drive.run_target(driveSpeed,-720)
+            steering.run_target(steerSpeed,-70)
+            drive.run_target(driveSpeed,720)
+            drive.run(driveSpeed)    
+            steering.run_target(steerSpeed,0,wait=False)
+        print("Semi")
             
 #Sledování čáry
 def linefollower():
+    drive.brake()
+    steering.run_target(steerSpeed,0,wait=True)
     drive.run(lineSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
@@ -143,9 +147,10 @@ def linefollower():
             break
         
         if light.reflection() > boundary:
-            steering.run_angle(15,wait=False)
+            steering.run_target(steerSpeed,45,wait=False)
         else:
-            steering.run_angle(-15,wait=False)
+            steering.run_target(steerSpeed,-45,wait=False)
+        print("Line")
         
 
 #-------------
@@ -165,7 +170,7 @@ while True:
     if len(buttons)==4:
         drive.brake()
         steering.brake()
-        steering.run_to_angle(0,wait=True)
+        steering.run_target(steerSpeed,0,wait=True)
         exit()
     
     
@@ -195,4 +200,6 @@ while True:
         
         #Zatím nevyužité
         if buttons[0] == Button.RIGHT_DOWN:
-            pass
+            #linefollower()
+            semiauto()
+    print(light.reflection())
