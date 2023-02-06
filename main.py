@@ -23,6 +23,7 @@ infra = InfraredSensor(Port.S3)
 #compass = Ev3devSensor(Port.S2)
 ultra = UltrasonicSensor(Port.S1)
 light = ColorSensor(Port.S2)
+panto = Motor(Port.D)
 
 #Proměnné
 running = False #Je kamion v pohybu
@@ -41,8 +42,8 @@ steerAngle = 5 #O kolik stupňů se má motor otočit při jednom stisknutí tla
 maxAngle = 70 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
 degreesToAvoid = 720 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
 
-black = 15 #Naměřená hodnota černé
-white = 80 #Naměřená hodnota bílé
+black = 12 #Naměřená hodnota černé
+white = 45 #Naměřená hodnota bílé
 boundary = (black + white) / 2 #Rozmezí bílé a černé
 
 #Hlavní funkce
@@ -119,10 +120,14 @@ def EStop():
 def semiauto():
     turning = False
     drive.run(driveSpeed)
+    panto.run_target(lineSpeed, 310, wait=False)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí jakéhokoliv tlačítka vypne režim
+            drive.brake()
+            panto.run_target(lineSpeed, 5, wait=True)
             break
+
         
         distance = ultra.distance() #Získá vzdálenost před kamionem
         drive.run(speed = driveSpeed) 
@@ -139,18 +144,22 @@ def semiauto():
 #Sledování čáry
 def linefollower():
     drive.brake()
+    panto.run_target(lineSpeed,310,wait=False)
     steering.run_target(steerSpeed,0,wait=True)
     drive.run(lineSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí jakéhokoliv tlačítka vypne režim
+            drive.brake()
+            steering.run_target(steerSpeed,0,wait=True)
+            panto.run_target(lineSpeed,5,wait=True)
             break
         
         if light.reflection() > boundary:
             steering.run_target(steerSpeed,45,wait=False)
         else:
             steering.run_target(steerSpeed,-45,wait=False)
-        print("Line")
+        print("Line",light.reflection())
         
 
 #-------------
@@ -169,6 +178,7 @@ while True:
     #Vypnutí programu
     if len(buttons)==4:
         drive.brake()
+        panto.run_target(lineSpeed,0,wait=False)
         steering.brake()
         steering.run_target(steerSpeed,0,wait=True)
         exit()
@@ -184,7 +194,13 @@ while True:
         #Jízda vzad
         if buttons[0] == Button.LEFT_DOWN and buttons[1] == Button.RIGHT_DOWN:
             drive.run(speed = -(driveSpeed))
-            running = True 
+            running = True
+        #Semiauto režim
+        if buttons[0] == Button.RIGHT_UP and buttons[1] == Button.RIGHT_DOWN:
+            semiauto()
+        #Linefollower
+        if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_DOWN:
+            linefollower()
     #Samostatná tlačítka
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP: #Zatáčení doleva
@@ -201,5 +217,6 @@ while True:
         #Zatím nevyužité
         if buttons[0] == Button.RIGHT_DOWN:
             #linefollower()
-            semiauto()
-    print(light.reflection())
+            #semiauto()
+            pass
+    print(buttons)
