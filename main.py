@@ -152,6 +152,32 @@ def linefollower():
             steering.run_target(steerSpeed,-45,wait=False)
         print("Line")
         
+def linepd(bila,cerna):
+    drive.brake()
+    
+    hranice = (bila + cerna)/2
+    error = 0
+    last_error = 0
+    integral = 0
+    derivative = 0
+    kp = 1
+    ki = 0.001
+    kd = 0.1
+    
+    steering.run_target(steerSpeed,0,wait=True)
+    drive.run(lineSpeed)
+    
+    
+    while True:
+        buttons = infra.keypad() #Získá stiknutá tlačítka
+        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+            break
+        error = light.reflection() - hranice
+        integral += error
+        derivative = last_error - error
+        result = kp*error + ki*integral + kd*derivative
+        steering.run_target(steerSpeed,result,wait=False)
+        last_error = error
 
 #-------------
 #Hlavní cyklus
