@@ -12,7 +12,7 @@ from pybricks.media.ev3dev import SoundFile, ImageFile
 #TODO
 #Vypínání ovladačem - h
 #Sledování čářy - h
-#Sledování čáry PID
+#Sledování čáry PID - h
 
 
 #Nastavení senzorů a motorů
@@ -118,12 +118,11 @@ def EStop():
 
 #Semiautonomní režim
 def semiauto():
-    turning = False
     drive.run(driveSpeed)
     panto.run_target(lineSpeed, 310, wait=False)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
             drive.brake()
             panto.run_target(lineSpeed, 5, wait=True)
             break
@@ -134,12 +133,12 @@ def semiauto():
         if distance <= 180: #Jestli je před kamionem překážka zatočí
             drive.brake()
             drive.reset_angle(0)
-            drive.run_target(driveSpeed,-720)
+            drive.run_target(driveSpeed,degreesToAvoid)
             steering.run_target(steerSpeed,-70)
-            drive.run_target(driveSpeed,720)
-            drive.run(driveSpeed)    
-            steering.run_target(steerSpeed,0,wait=False)
-        print("Semi")
+            drive.run_target(driveSpeed,-degreesToAvoid)
+            steering.run_target(steerSpeed,0,wait=True)
+            
+        #print("Semi")
             
 #Sledování čáry
 def linefollower():
@@ -149,7 +148,7 @@ def linefollower():
     drive.run(lineSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
             drive.brake()
             steering.run_target(steerSpeed,0,wait=True)
             panto.run_target(lineSpeed,5,wait=True)
@@ -159,34 +158,41 @@ def linefollower():
             steering.run_target(steerSpeed,45,wait=False)
         else:
             steering.run_target(steerSpeed,-45,wait=False)
-        print("Line",light.reflection())
+        #print("Line",light.reflection())
         
 def linepd(bila,cerna):
-    drive.brake()
+    drive.brake() #Zastaví
+    panto.run_target(lineSpeed,310,wait=False) #Vysune pantograf
+    steering.run_target(steerSpeed,0,wait=True) #Zarovná kola
+
+    hranice = (bila + cerna)/2 #Rozhraní černé a bílé
     
-    hranice = (bila + cerna)/2
+    #Konstanty a proměnné pro PID
     error = 0
     last_error = 0
     integral = 0
     derivative = 0
     kp = 1
-    ki = 0.001
+    ki = 0.001 
     kd = 0.1
-    
-    steering.run_target(steerSpeed,0,wait=True)
-    drive.run(lineSpeed)
-    
-    
+
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
         if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+            steering.run_target(steerSpeed,0,wait=True) #Zarovná kola
+            panto.run_target(lineSpeed,5,wait=True) #Zasune pantograf
             break
-        error = light.reflection() - hranice
-        integral += error
-        derivative = last_error - error
-        result = kp*error + ki*integral + kd*derivative
-        steering.run_target(steerSpeed,result,wait=False)
-        last_error = error
+
+        error = light.reflection() - hranice #Proporcionální - aktuální odchylka
+        integral += error #Integrační - sčítá chyby, snaží se předpovědět budoucí
+        derivative = last_error - error #Derivační - podle předchozí chyby 
+        result = kp*error + ki*integral + kd*derivative #Součet všeho
+        if result > 70: #Proti přetočení kol
+            result = 70
+        elif result < -70:
+            result = -70
+        steering.run_target(steerSpeed,result,wait=False) #Zatočení
+        last_error = error #Zápis chyby
 
 #-------------
 #Hlavní cyklus
@@ -226,7 +232,7 @@ while True:
             semiauto()
         #Linefollower
         if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_DOWN:
-            linefollower()
+            linepd(12,45)
     #Samostatná tlačítka
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP: #Zatáčení doleva
