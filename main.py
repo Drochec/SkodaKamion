@@ -41,7 +41,7 @@ semiSpeed = 520
 lineSpeed = 130 #Rychlost při sledování čáry
 steerAngle = 5 #O kolik stupňů se má motor otočit při jednom stisknutí tlačítka
 maxAngle = 90 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
-degreesToAvoid = 1080 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
+degreesToAvoid = 360 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
 
 black = 60 #Naměřená hodnota černé
 white =  20 #Naměřená hodnota bílé
@@ -119,6 +119,7 @@ def EStop():
 
 #Semiautonomní režim
 def semiauto():
+    turning = False
     drive.run(semiSpeed)
     panto.run_target(lineSpeed, 310, wait=False)
     while True:
@@ -136,8 +137,12 @@ def semiauto():
             drive.reset_angle(0)
             steering.run_target(steerSpeed,-maxAngle)
             drive.run_target(semiSpeed,-degreesToAvoid)
-            #drive.run_target(semiSpeed,degreesToAvoid)
-            steering.run_target(steerSpeed,0,wait=True)
+            steering.run_target(steerSpeed,maxAngle)
+            turning = True
+        if turning and drive.angle() >= degreesToAvoid:
+            steering.run_target(steerSpeed,0,wait=False)
+            turning = False
+            
             
         print("Semi",distance)
             
