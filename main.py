@@ -37,13 +37,14 @@ stoppedForward = False #Jízda vpřed byla zastavena
 
 driveSpeed = 1560 #Rychlost motoru, v stupních za sekundu (1560 ma)
 steerSpeed = 1560
-lineSpeed = 260 #Rychlost při sledování čáry
+semiSpeed = 520
+lineSpeed = 130 #Rychlost při sledování čáry
 steerAngle = 5 #O kolik stupňů se má motor otočit při jednom stisknutí tlačítka
-maxAngle = 70 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
-degreesToAvoid = 720 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
+maxAngle = 90 #Maximálni úhel na který se může otočit motor který ovládá zatáčení
+degreesToAvoid = 1080 #Kolik stupňů musí kamion ujet dokud nebude mimo překážku
 
-black = 12 #Naměřená hodnota černé
-white = 45 #Naměřená hodnota bílé
+black = 60 #Naměřená hodnota černé
+white =  20 #Naměřená hodnota bílé
 boundary = (black + white) / 2 #Rozmezí bílé a černé
 
 #Hlavní funkce
@@ -118,27 +119,27 @@ def EStop():
 
 #Semiautonomní režim
 def semiauto():
-    drive.run(driveSpeed)
+    drive.run(semiSpeed)
     panto.run_target(lineSpeed, 310, wait=False)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí brzdy vypne režim
             drive.brake()
             panto.run_target(lineSpeed, 5, wait=True)
             break
 
         
         distance = ultra.distance() #Získá vzdálenost před kamionem
-        drive.run(speed = driveSpeed) 
+        drive.run(speed = semiSpeed) 
         if distance <= 180: #Jestli je před kamionem překážka zatočí
             drive.brake()
             drive.reset_angle(0)
-            drive.run_target(driveSpeed,degreesToAvoid)
-            steering.run_target(steerSpeed,-70)
-            drive.run_target(driveSpeed,-degreesToAvoid)
+            steering.run_target(steerSpeed,-maxAngle)
+            drive.run_target(semiSpeed,-degreesToAvoid)
+            #drive.run_target(semiSpeed,degreesToAvoid)
             steering.run_target(steerSpeed,0,wait=True)
             
-        #print("Semi")
+        print("Semi",distance)
             
 #Sledování čáry
 def linefollower():
@@ -148,7 +149,7 @@ def linefollower():
     drive.run(lineSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí brzdy vypne režim
             drive.brake()
             steering.run_target(steerSpeed,0,wait=True)
             panto.run_target(lineSpeed,5,wait=True)
@@ -170,30 +171,56 @@ def linepd(bila,cerna):
     #Konstanty a proměnné pro PID
     error = 0
     last_error = 0
-    integral = 0
+    #integral = 0
     derivative = 0
-    kp = 1
-    ki = 0.001 
-    kd = 0.1
+    kp = 7.5
+    #ki = 0.001 
+    kd = 2.5
 
+    drive.run(lineSpeed)
     while True:
         buttons = infra.keypad() #Získá stiknutá tlačítka
-        if len(buttons)>0: #Při stiknutí jakéhokoliv tlačítka vypne režim
+        color = light.reflection()
+        if len(buttons)>0 and buttons[0] == Button.LEFT_DOWN: #Při stiknutí brzdy vypne režim
+            drive.brake()
             steering.run_target(steerSpeed,0,wait=True) #Zarovná kola
-            panto.run_target(lineSpeed,5,wait=True) #Zasune pantograf
+            panto.run_target(lineSpeed,5,wait=False) #Zasune pantograf
             break
 
-        error = light.reflection() - hranice #Proporcionální - aktuální odchylka
-        integral += error #Integrační - sčítá chyby, snaží se předpovědět budoucí
+        error = (hranice - color) #Proporcionální - aktuální odchylka
+        #integral += error #Integrační - sčítá chyby, snaží se předpovědět budoucí
         derivative = last_error - error #Derivační - podle předchozí chyby 
-        result = kp*error + ki*integral + kd*derivative #Součet všeho
-        if result > 70: #Proti přetočení kol
-            result = 70
-        elif result < -70:
-            result = -70
-        steering.run_target(steerSpeed,result,wait=False) #Zatočení
+        result = kp*error + kd*derivative #Součet všeho
+        if result > maxAngle: #Proti přetočení kol
+            result = maxAngle
+        elif result < -maxAngle:
+            result = -maxAngle
+        steering.run_target(steerSpeed,int(result),wait=False) #Zatočení
         last_error = error #Zápis chyby
-
+        print("LinePID",color,int(result))
+        
+        
+#Kalibrace
+def calibrate():
+    global black
+    global white
+    
+    white = 0
+    black = 100
+    
+    drive.reset_angle(0)
+    drive.run(lineSpeed)
+    while drive.angle() <= 360:
+        color = light.reflection()
+        if color < black:
+            black = color
+        if color > white:
+            white = color
+    print(black,white)
+    ev3.speaker.beep()
+    drive.brake()
+    
+        
 #-------------
 #Hlavní cyklus
 #-------------
@@ -214,7 +241,9 @@ while True:
         steering.brake()
         steering.run_target(steerSpeed,0,wait=True)
         exit()
-    
+    if len(buttons) == 3 and buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_UP and buttons[2] == Button.RIGHT_DOWN:
+        calibrate()
+        
     
     #Kombinace tlačítek
     elif len(buttons)>1:
@@ -232,7 +261,8 @@ while True:
             semiauto()
         #Linefollower
         if buttons[0] == Button.LEFT_UP and buttons[1] == Button.RIGHT_DOWN:
-            linepd(12,45)
+            #linepd(12,45)
+            linepd(25,50)
     #Samostatná tlačítka
     elif len(buttons)==1:
         if buttons[0] == Button.LEFT_UP: #Zatáčení doleva
@@ -251,4 +281,4 @@ while True:
             #linefollower()
             #semiauto()
             pass
-    print(buttons)
+    #print(buttons,light.reflection(),steering.angle(),ultra.distance())
